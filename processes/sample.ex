@@ -18,3 +18,7 @@ get_result = fn ->
   end
 end
 
+1..5 |>
+  Enum.map(&async_query.("query #{&1}")) |>
+  Enum.map(fn(_) -> get_result.() end)
+
