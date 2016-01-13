@@ -1,13 +1,20 @@
-#without processes
 run_query = fn(query_def) ->
   :timer.sleep(2000)
   "#{query_def} result"
 end
-run_query.('query 1')
 
-1..5 |>
-  Enum.map(&run_query.("query #{&1}"))
+async_query = fn(query_def) ->
+  caller = self
+  spawn(fn ->
+    send(caller, {:query_result, run_query.(query_def)})
+  end)
+end
 
+Enum.each(1..5, &async_query.("query #{&1}"))
 
-# with concurrency
-spawn(fn -> IO.puts(run_query.("query 1")) end)
+get_result = fn ->
+  receive do
+    {:query_result, result} -> result
+  end
+end
+
