@@ -27,4 +27,17 @@ defmodule DatabaseServer do
       {:error, :timeout}
     end
   end
+
+  pool =
+    1..100 |>
+    Enum.map(fn(_) -> DatabaseServer.start end)
+
+  1..5 |>
+    Enum.each(fn(query_def) ->
+      server_pid = Enum.at(pool, :random.uniform(100) - 1)
+      DatabaseServer.run_async(server_pid, query_def)
+    end)
+
+  1..5 |>
+    Enum.map(fn(_) -> DatabaseServer.get_result end)
 end
