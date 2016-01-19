@@ -1,19 +1,23 @@
 defmodule DatabaseServer do
   def start do
-    spawn(&loop/0)
+    spawn(fn ->
+      connection = :random.uniform(1000)
+      loop(connection)
+    end)
   end
 
-  defp loop do
+  defp loop(connection) do
     receive do
-      {:run_query, caller, query_def} ->
-        send(caller, {:query_result, run_query(query_def)})
+      {:run_query, from_pid, query_def} ->
+        query_result = run_query(connection, query_def)
+        send(from_pid, {:query_result, query_result})
     end
-    loop
+    loop(connection)
   end
 
-  defp run_query(query_def) do
+  defp run_query(connection, query_def) do
     :timer.sleep(2000)
-    "#{query_def} result"
+    "Connection #{connection}: #{query_def} result"
   end
 
   def run_async(server_pid, query_def) do
@@ -27,17 +31,4 @@ defmodule DatabaseServer do
       {:error, :timeout}
     end
   end
-
-  pool =
-    1..100 |>
-    Enum.map(fn(_) -> DatabaseServer.start end)
-
-  1..5 |>
-    Enum.each(fn(query_def) ->
-      server_pid = Enum.at(pool, :random.uniform(100) - 1)
-      DatabaseServer.run_async(server_pid, query_def)
-    end)
-
-  1..5 |>
-    Enum.map(fn(_) -> DatabaseServer.get_result end)
 end
